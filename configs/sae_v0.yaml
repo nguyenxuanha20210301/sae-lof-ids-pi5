@@ -1,0 +1,51 @@
+# SAE v0 configuration — baseline theo đề cương §6.2, §6.3
+# Dùng cho cả sub-sample training (Tuần 3) và full training (Tuần 4)
+
+run_name: sae_v0
+
+# --- Data paths (theo output của EDA ở Tuần 2) ---
+data:
+  train_path: /home/kali/sae-lof-ids-pi5/data/processed/train_benign.parquet
+  val_path:   /home/kali/sae-lof-ids-pi5/data/processed/val.parquet
+  benign_label: 0
+  # Sub-sample cho Tuần 3 quick iteration; Tuần 4 đặt null để full 878,556 benign
+  max_train_samples: 50000
+  max_val_samples:   20000
+
+# --- Model ---
+model:
+  input_dim: 46        # sẽ auto-override nếu parquet có số cột khác
+  hidden_dims: [32, 16]
+  latent_dim: 8
+
+# --- Loss ---
+loss:
+  rho: 0.05           # target sparsity (Andrew Ng default)
+  beta: 3.0           # KL penalty weight
+
+# --- Optim ---
+optim:
+  lr: 0.001
+  batch_size: 256
+  max_epochs: 50      # Tuần 3 dùng 50; Tuần 4 dùng 200
+  patience: 10
+
+# --- Infra ---
+infra:
+  num_workers: 2
+  device: auto        # auto -> cuda nếu có, cpu nếu không
+  seed: 0
+
+# --- Logging ---
+logging:
+  ckpt_dir: ./checkpoints
+  log_dir:  ./logs
+  verbose_every: 1
+
+# --- Grid search sơ bộ (Tuần 3) ---
+# Theo RQ5 của đề cương: ablation rho ∈ {0.01, 0.05, 0.1, 0.2}, beta ∈ {1, 3, 10}
+# Tuần 3 thu hẹp còn 3x3 = 9 combo để chọn điểm đẹp cho Tuần 4 grid đầy đủ
+grid_search:
+  rho_values:  [0.01, 0.05, 0.10]
+  beta_values: [1.0, 3.0, 10.0]
+  # Với sub-sample 50k + 50 epoch, mỗi combo ~2-5 phút trên GPU -> 9 combo ~30-45 phút
