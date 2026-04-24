@@ -1,0 +1,52 @@
+# Week 4 config: full training + extended grid + multi-seed
+# Dựa trên configs/sae_v0_tuned.yaml (Week 3) + extend theo đề cương §5/§6.3
+
+run_name: sae_v1_full
+
+# --- Data paths (DRIVE paths cho Colab) ---
+# Notebook tự động resolve sang /content/local_cache/ để I/O nhanh
+data:
+  train_path: train_benign.parquet
+  val_path:   val.parquet
+  benign_label: 0
+  # Full data, không sub-sample
+  max_train_samples: null
+  max_val_samples:   null
+
+# --- Model ---
+model:
+  input_dim: 46
+  hidden_dims: [32, 16]
+  latent_dim: 8
+
+# --- Optim (theo đề cương §6.3) ---
+optim:
+  lr: 0.001
+  batch_size: 256
+  max_epochs: 200
+  patience: 10
+
+# --- Infra ---
+infra:
+  num_workers: 4
+  device: auto
+
+# --- Logging (Drive paths) ---
+logging:
+  verbose_every: 5
+
+# --- Grid search (đề cương §5 RQ5) ---
+# 4 × 3 = 12 combo
+grid_search:
+  rho_values:  [0.01, 0.05, 0.10, 0.20]
+  beta_values: [1.0, 3.0, 10.0]
+
+# --- Multi-seed (đề cương §6.3) ---
+# Top-2 combo lấy từ Week 3 grid (AUC cao nhất, rho_hat bind tốt)
+# Chạy 5 seed trên mỗi combo → mean ± std cho paper
+multi_seed:
+  seeds: [0, 1, 42, 123, 2026]
+  # Top-2 combo sẽ được multi-seed (chọn từ grid Week 3):
+  top_configs:
+    - {rho: 0.05, beta: 3.0}    # primary: Andrew Ng default, AUC 0.9937, ρ̂_dev 0.00030
+    - {rho: 0.10, beta: 3.0}    # backup:  best val MSE 0.27274, AUC 0.9364, ρ̂_dev 0.00002
